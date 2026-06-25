@@ -191,6 +191,7 @@ Se os sites ficam em pastas irmãs ao HappyWP (não dentro), descomente no `api.
 | **CSRF Token** | Gerenciador de arquivos possui proteção contra CSRF |
 | **Path Traversal** | Validação rigorosa de caminhos para evitar acessos não autorizados |
 | **Credenciais Centralizadas** | `auth.php` no `.gitignore` — senhas não vão para o Git |
+| **Proteção Brute Force** | Bloqueio automático após 5 tentativas falhas em 15 minutos |
 | **Exclusão Segura** | Ao excluir sites, exige confirmação digitando o nome da pasta |
 | **Backups Órfãos** | Sistema detecta e permite gerenciar backups de sites já removidos |
 | **Configuração Visual** | Credenciais MySQL configuráveis sem editar arquivos manualmente |
@@ -204,8 +205,8 @@ Se os sites ficam em pastas irmãs ao HappyWP (não dentro), descomente no `api.
 
 2. **🚫 Sessão PHP simples**
    - O HappyWP usa sessões PHP padrão (`$_SESSION`), sem autenticação em dois fatores (2FA)
-   - Não há limite de tentativas de login ou bloqueio por IP
-   - **Mitigação:** Use senhas fortes (mínimo 12 caracteres, misto de letras, números e símbolos)
+   - **✅ Proteção Brute Force implementada:** Bloqueio automático após 5 tentativas falhas em 15 minutos (por IP)
+   - **Mitigação:** Mesmo com a proteção, use senhas fortes (mínimo 12 caracteres, misto de letras, números e símbolos)
 
 3. **🚫 phpinfo() exposto**
    - `happy-phpinfo.php` exibe informações completas do servidor PHP (protegido por login, mas ainda assim sensível)
@@ -224,9 +225,10 @@ Se os sites ficam em pastas irmãs ao HappyWP (não dentro), descomente no `api.
    - Um invasor com acesso ao painel pode injetar código malicioso, ler configurações, etc.
    - **Mitigação:** Limite o acesso ao painel apenas a pessoas de confiança
 
-7. **🚫 Sem proteção contra brute force**
-   - Não há rate limiting ou bloqueio após múltiplas tentativas de login falhas
-   - **Mitigação:** Use um firewall de aplicação web (WAF) ou configure proteção no servidor
+7. **🚫 Arquivo de tentativas em texto plano**
+   - As tentativas de login são armazenadas em `login_attempts.json` (apenas hash do IP, sem expor o IP real)
+   - Em servidores compartilhados, outros sites podem ler este arquivo
+   - **Mitigação:** Mantenha as permissões restritas: `chmod 600 login_attempts.json`
 
 ### 🛡️ Orientações para Usuários (Boas Práticas)
 
