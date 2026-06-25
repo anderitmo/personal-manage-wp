@@ -179,17 +179,108 @@ Se os sites ficam em pastas irmãs ao HappyWP (não dentro), descomente no `api.
 
 ---
 
-## 🔒 Segurança
+## 🔒 Segurança — Notas Importantes
 
-- ✅ Todas as páginas sensíveis exigem autenticação por sessão
-- ✅ CSRF token no gerenciador de arquivos
-- ✅ Validação contra path traversal
-- ✅ `auth.php` no `.gitignore` (não versiona senhas)
-- ✅ Senha do MySQL configurável via interface (sem editar arquivos)
-- ⚠️ Use **HTTPS** em produção para proteger credenciais em trânsito
-- ⚠️ Nunca exponha o HappyWP diretamente na internet sem autenticação forte
+> ⚠️ **ATENÇÃO:** O HappyWP é uma ferramenta de administração com poderes elevados. Ela pode ler, criar, modificar e excluir arquivos e bancos de dados. Use com responsabilidade.
 
----
+### ✅ Medidas de Segurança Implementadas
+
+| Medida | Descrição |
+|--------|-----------|
+| **Autenticação por Sessão** | Todas as páginas administrativas exigem login |
+| **CSRF Token** | Gerenciador de arquivos possui proteção contra CSRF |
+| **Path Traversal** | Validação rigorosa de caminhos para evitar acessos não autorizados |
+| **Credenciais Centralizadas** | `auth.php` no `.gitignore` — senhas não vão para o Git |
+| **Exclusão Segura** | Ao excluir sites, exige confirmação digitando o nome da pasta |
+| **Backups Órfãos** | Sistema detecta e permite gerenciar backups de sites já removidos |
+| **Configuração Visual** | Credenciais MySQL configuráveis sem editar arquivos manualmente |
+
+### ⚠️ Limitações e Riscos de Segurança
+
+1. **🚫 Senhas em texto plano**
+   - As credenciais do painel e do MySQL são armazenadas em texto plano no arquivo `auth.php`
+   - Não há hashing ou criptografia — qualquer pessoa com acesso ao servidor pode lê-las
+   - **Mitigação:** Mantenha o `auth.php` protegido (permissões 600 no Linux) e nunca o compartilhe
+
+2. **🚫 Sessão PHP simples**
+   - O HappyWP usa sessões PHP padrão (`$_SESSION`), sem autenticação em dois fatores (2FA)
+   - Não há limite de tentativas de login ou bloqueio por IP
+   - **Mitigação:** Use senhas fortes (mínimo 12 caracteres, misto de letras, números e símbolos)
+
+3. **🚫 phpinfo() exposto**
+   - `happy-phpinfo.php` exibe informações completas do servidor PHP (protegido por login, mas ainda assim sensível)
+   - **Mitigação:** Remova ou restrinja este arquivo em produção
+
+4. **🚫 Sem logs de auditoria**
+   - O HappyWP não registra quem fez o quê e quando (logs de acesso, exclusão, etc.)
+   - **Mitigação:** Monitore os logs do servidor web (Apache/Nginx)
+
+5. **🚫 Sem criptografia em repouso**
+   - Backups gerados contêm dados sensíveis (DB com senhas, emails, etc.) e são armazenados em arquivos ZIP sem criptografia
+   - **Mitigação:** Baixe backups para local seguro e remova do servidor após download
+
+6. **🚫 Acesso irrestrito ao File Manager**
+   - O gerenciador de arquivos pode acessar QUALQUER arquivo dentro da pasta do HappyWP
+   - Um invasor com acesso ao painel pode injetar código malicioso, ler configurações, etc.
+   - **Mitigação:** Limite o acesso ao painel apenas a pessoas de confiança
+
+7. **🚫 Sem proteção contra brute force**
+   - Não há rate limiting ou bloqueio após múltiplas tentativas de login falhas
+   - **Mitigação:** Use um firewall de aplicação web (WAF) ou configure proteção no servidor
+
+### 🛡️ Orientações para Usuários (Boas Práticas)
+
+Se você pretende clonar e usar o HappyWP, siga estas recomendações:
+
+1. **🔑 Use senhas fortes**
+   - Altere a senha padrão `CHANGE_ME_PLEASE` imediatamente
+   - Use senhas com no mínimo 12 caracteres, incluindo maiúsculas, minúsculas, números e símbolos
+   - Nunca reutilize senhas de outros serviços
+
+2. **🔒 HTTPS é obrigatório em produção**
+   - Sem HTTPS, as credenciais trafegam em texto plano na rede
+   - Use Let's Encrypt (Certbot) para certificados gratuitos
+
+3. **🌐 Restrinja o acesso por IP (se possível)**
+   - No Apache, use `.htaccess` para permitir apenas seu IP:
+   ```apache
+   Require ip 192.168.1.0/24
+   Require ip 200.200.200.200
+   ```
+   - No Nginx, use a diretiva `allow/deny`
+
+4. **📂 Proteja pastas sensíveis**
+   - Certifique-se de que o `auth.php` tenha permissões restritas:
+   ```bash
+   chmod 600 auth.php        # Linux - apenas o dono lê/escreve
+   chmod -R 750 happy-backup # Linux - apenas o dono lista
+   ```
+   - Adicione proteção extra via `.htaccess`:
+   ```apache
+   <Files "auth.php">
+       Require all denied
+   </Files>
+   ```
+
+5. **🗑️ Remova o installer de phpMyAdmin**
+   - Laragon/vários servidores vêm com phpMyAdmin — se não precisar, remova ou proteja
+
+6. **📋 Faça revisões periódicas**
+   - Verifique quem tem acesso ao painel
+   - Remova sites e backups antigos que não são mais necessários
+   - Mantenha o PHP e o servidor atualizados
+
+7. **🌙 Ambientes de produção**
+   - Considere usar um **VLAN** ou **rede privada** para o HappyWP
+   - Nunca exponha diretamente na internet sem um proxy reverso (Nginx, Apache) configurado
+   - Ideal: mantenha o HappyWP acessível apenas via VPN (WireGuard, OpenVPN)
+
+8. **🧪 Use em ambiente controlado**
+   - O HappyWP foi projetado para **desenvolvimento local** (Laragon, XAMPP) e **servidores internos**
+   - Se precisar usar em produção, contrate um profissional de segurança para auditar o código
+
+> 💡 **Lembrete:** Este é um software open source fornecido "no estado em que se encontra". O autor não se responsabiliza por danos decorrentes do uso. Você é responsável pela segurança do seu ambiente.
+
 
 ## 🤝 Contribuindo
 
